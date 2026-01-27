@@ -1,0 +1,164 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+service_register() {
+	printf "\n\n"
+	echo -n "Enter The Desired Name For Your Service :- "
+	read -r SERVICE_RNAME
+
+	if [[ -d "$PREFIX/var/service/$SERVICE_RNAME" ]]; then
+		printf "\n\n"
+		echo "Service Already Exists!"
+		echo "Aborting!"
+	else
+		printf "\n\n"
+		echo "Creating Directory With Your Preferred Service Name..."
+		mkdir -p -v $PREFIX/var/service/$SERVICE_RNAME/log
+
+		printf "\n\n"
+		echo "Choose How To Create A Service Script!"
+		printf "\n\n"
+		echo "1. Manual Setup (Standard Method)!"
+		printf "\n"
+		echo "2. Symlinking Existing Service Script (Backup Recovery Method)!"
+		printf "\n\n"
+		echo -n "Option (1/2) :- "
+		read -r SERVICE_REGISTERATION_SETUP
+
+		if [[ $SERVICE_REGISTERATION_SETUP -eq 2 ]]; then
+			echo -n "Enter The Absolute Path Of The Backed Up Service Script :- "
+			read -r SERVICE_SETUP_SYMLINK_PATH
+			ln -svf $SERVICE_SETUP_SYMLINK_PATH $PREFIX/var/service/$SERVICE_RNAME/run
+			service_script_post_generation
+		else
+			service_script_generator
+		fi
+	fi
+}
+
+service_script_generator() {
+	printf "\n\n\n"
+	echo "Choose Which Type Of Service Is Being Registered!"
+	printf "\n\n"
+	echo "1. Native Server Daemon (Uses 'sh' As Service Script's SheBang)!"
+	printf "\n"
+	echo "2. uDocker-Based Server Daemon (Uses 'bash' As Service Script's Shebang)!"
+	printf "\n\n"
+	echo -n "Option (1/2) :- "
+	read -r SERVICE_TYPE
+
+	if [[ $SERVICE_TYPE -eq 2 ]]; then
+		echo "#!/data/data/com.termux/files/usr/bin/bash" > $PREFIX/var/service/$SERVICE_RNAME/run
+	else
+		echo "#!/data/data/com.termux/files/usr/bin/sh" > $PREFIX/var/service/$SERVICE_RNAME/run
+	fi
+
+	printf "\n\n\n"
+	echo "Choose Service Script Generation Method!"
+	printf "\n\n"
+	echo "1. One-Liner Command (Standard Mode)!"
+	printf "\n"
+	echo "2. Manual Editing (Advanced/Expert Mode)!"
+	printf "\n"
+	echo "NOTE :- "
+	printf "\n"
+	echo "In Option 1, Syntax 'exec 'Your Command' 2>&1' Is Followed."
+	echo "You Only Have To Type The Command That Runs The Service's Daemon."
+	echo "For Example, Commands Like 'mysqld', 'sshd', Etc."
+	printf "\n"
+	echo "In Option 2, The Service Script Which Is Being Made, Is Opened In A Text Editor Using 'editor' Command."
+	echo "This Allows Complete Control Of Service Script Customization."
+	echo "Like Variable Declaration(S), Multi-Daemon Service Execution, Etc."
+	echo "Use This Only If You Know About Runit Service File Syntax, And Termux-Services Syntax!"
+	printf "\n\n"
+	echo -n "Option (1/2) :- "
+	read -r SERVICE_SCRIPT_GENERATION_METHOD
+
+	if [[ $SERVICE_SCRIPT_GENERATION_METHOD -eq 2 ]]; then
+		editor $PREFIX/var/service/$SERVICE_RNAME/run
+		service_script_post_generation
+	else
+		echo -n "Enter Your One-Liner Command :- "
+		read -r SERVICE_COMMAND_ONELINER
+		echo "exec $SERVICE_COMMAND_ONELINER 2>&1" >> $PREFIX/var/service/$SERVICE_RNAME/run
+		service_script_post_generation
+	fi
+}
+
+service_script_post_generation() {
+	printf "\n\n"
+	echo "Making Service's Run Script Executable..."
+	chmod -v +x $PREFIX/var/service/$SERVICE_RNAME/run
+
+	printf "\n"
+	echo "Creating Service's Toggle Script..."
+	touch $PREFIX/var/service/$SERVICE_RNAME/down
+
+	printf "\n"
+	echo "Symlinking Termux's Service Daemon's Logger To Service's Log System..."
+	ln -svf $PREFIX/share/termux-services/svlogger $PREFIX/var/service/$SERVICE_RNAME/log/run
+
+	printf "\n\n"
+	echo "Service Created Successfully!"
+	echo "Run 'sv-enable $SERVICE_RNAME' To Enable The Service To Run In Background Via Service Daemon!"
+	echo "Run 'sv-disable $SERVICE_RNAME' To Disable The Service From Running In Background Via Service Daemon!"
+	echo "Run 'svmon' Without Any Flags, 'svmon --status', 'svmon --stat', Or 'svmon -s', To See The Status Of All Running Services!"
+}
+
+service_deregister() {
+	printf "\n\n"
+	echo "The Service You Want To De-Register,"
+	echo "MUST Exist In Path '/data/data/com.termux/files/usr/var/service/' As A Directory!"
+	echo "Name Of The Directory In The Path Above, And Name You Will Be Typing Below, MUST Be Same!"
+
+	printf "\n"
+	echo -n "Enter The Name Of The Service You Want To De-Register :- "
+	read -r SERVICE_DRNAME
+
+	if [[ -d "$PREFIX/var/service/$SERVICE_DRNAME" ]]; then
+		printf "\n\n"
+		echo "The Following Action Will Delete The Directory Containing The Service Data!"
+		echo "If You Just Want To Disable The Service, Use 'sv-disable <SERVICE_NAME>'"
+
+		printf "\n"
+		echo -n "Are You Sure? :- "
+		read -r SERVICE_DEREG_CONFIRM
+
+		if [[ $SERVICE_DEREG_CONFIRM == "y" ]]; then
+			rm -rv $PREFIX/var/service/$SERVICE_DRNAME
+		fi
+	else
+		printf "\n\n"
+		echo "Service Does Not Exist!"
+		echo "Aborting!"
+	fi
+}
+
+case $1 in
+	register|--register|reg|--reg|r|-r)
+		service_register
+		;;
+	deregister|--deregister|dereg|--dereg|d|-d)
+		service_deregister
+		;;
+	*)
+		printf "\n\n"
+		echo "Choose An Operation To Perform!"
+		printf "\n\n"
+		echo "1. Register A New Service!"
+		printf "\n"
+		echo "2. Deregister A Pre-Existing Service!"
+		printf "\n\n"
+		echo -n "Option (1/2) :- "
+		read -r SERVICE_OPERATION
+
+		if [[ $SERVICE_OPERATION -eq 1 ]]; then
+			service_register
+		elif [[ $SERVICE_OPERATION -eq 2 ]]; then
+			service_deregister
+		else
+			printf "\n\n"
+			echo "No Arguments Provided!"
+			echo "Aborting!"
+		fi
+		;;
+esac
