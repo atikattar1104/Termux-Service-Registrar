@@ -54,6 +54,6 @@ exec <service command> 2>&1
 
 # License :- 
 
-GP GNU GPL V3 BAYBEE 🔥🔥🔥🗿
+GNU GPL V3 BAYBEE 🔥🔥🔥🗿
 
 See `License.txt` . 
