@@ -12,9 +12,9 @@ termux-service-registrar <argument>
 
 ### Where, `<argument>` Can Be :- 
 
-1. `register` , `reg` , `--reg` , `r` , `-r` . 
+1. `register` , `--register` , `reg` , `--reg` , `r` , `-r` . 
 
-2. `deregister` , `dereg` , `--dereg` , `d` , `-d` . 
+2. `deregister` , `--deregister` , `dereg` , `--dereg` , `d` , `-d` . 
 
 # Cases :- 
 
@@ -46,8 +46,14 @@ Here,
 
 2H. It Uses `$PREFIX/bin/bash` As A Shebang For Run Script. 
 
+# Recommended Syntax :- 
+
+```
+exec <service command> 2>&1
+```
+
 # License :- 
 
-> GNU GPL V3 BAYBEE 🔥🔥🔥🗿
+GP GNU GPL V3 BAYBEE 🔥🔥🔥🗿
 
 See `License.txt` . 
